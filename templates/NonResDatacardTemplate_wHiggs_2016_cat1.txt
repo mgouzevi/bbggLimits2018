@@ -30,7 +30,7 @@ lumi_14TeV_HLLHC lnN				1.010   -       1.010   1.010		  1.010   1.010		1.010
 CMS_eff_g lnN					1.010   -       1.010   1.010		  1.010   1.010		1.010 
 CMS_scale_j_14TeV_HLLHC lnN       	    	1.010   -       1.010   1.010  		  1.010   1.010   	1.010 
 
-CMS_eff_b lnN       				1.020   -       1.020   1.020  		  1.020   1.020   	1.020 
+CMS_eff_b lnN       				1.010   -       1.010   1.010  		  1.010   1.010   	1.010 
 
 #Higgs TH
 theory_ggHN3LO lnN				-       -       -	-		-       -		1.039     
