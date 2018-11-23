@@ -124,7 +124,7 @@ int bbgg2DFitter::AddSigData(float mass, TString signalfile)
   if(opened==false) return -1;
   if (_verbLvl>1) std::cout << " TFile opened:"<<signalfile  << std::endl;
 
-  TTree* sigTree = (TTree*)sigFile->Get("LT");
+  TTree* sigTree = (TTree*)sigFile->Get("TCVARS");
 
   //Luminosity
   RooRealVar lumi("lumi","lumi", _lumi);
@@ -133,7 +133,7 @@ int bbgg2DFitter::AddSigData(float mass, TString signalfile)
   RooArgSet* ntplVars = bbgg2DFitter::defineVariables();
   if(sigTree==nullptr)
     {
-      if (_verbLvl>1) std::cout<<"LT tree for AddSigData not found."<<std::endl;
+      if (_verbLvl>1) std::cout<<"TCVARS tree for AddSigData not found."<<std::endl;
       std::exit(1);
     }
 
@@ -219,10 +219,10 @@ std::vector<float> bbgg2DFitter::AddHigData(float mass, TString signalfile, int 
   RooArgSet* ntplVars = defineVariables(1);
 
   TFile higFile(signalfile);
-  TTree* higTree = (TTree*) higFile.Get("LT");
+  TTree* higTree = (TTree*) higFile.Get("TCVARS");
   if(higTree==nullptr)
     {
-      if (_verbLvl>1) std::cout<<"LT for AddHigData not found "<<std::endl;
+      if (_verbLvl>1) std::cout<<"TCVARS for AddHigData not found "<<std::endl;
       std::exit(1);
     }
   RooDataSet higScaled("higScaled1","dataset",higTree, /* all variables of RooArgList*/*ntplVars,_cut,"evWeight");
@@ -269,9 +269,9 @@ void bbgg2DFitter::AddBkgData(TString datafile)
   RooArgSet* ntplVars = bbgg2DFitter::defineVariables();
 
   TFile dataFile(datafile);
-  TTree* dataTree = (TTree*) dataFile.Get("LT");
+  TTree* dataTree = (TTree*) dataFile.Get("TCVARS");
   if(dataTree==nullptr){
-    if (_verbLvl>1) std::cout<<"LT for AddBkgData not found "<<std::endl;
+    if (_verbLvl>1) std::cout<<"TCVARS for AddBkgData not found "<<std::endl;
     std::exit(1);
   }
   RooDataSet Data("Data","dataset",dataTree,*ntplVars,"","evWeight");
@@ -494,7 +494,8 @@ void bbgg2DFitter::MakeSigWS(std::string fileBaseName)
     {
 
       _w->factory(TString::Format("CMS_hgg_sig_m0_absShift[1,1,1]"));
-      _w->factory(TString::Format("CMS_hgg_sig_sigmaScale[1,1,1]"));
+      _w->factory(TString::Format("CMS_hgg_sig_sigmaShift_cat%d[1,1,1]",c));
+      _w->factory(TString::Format("CMS_hgg_sig_sigmaUncertainty[1,1,1]"));
 
       if (_fitStrategy==2){
 	_w->factory(TString::Format("CMS_hbb_sig_sigmaScale[1,1,1]"));
@@ -523,8 +524,11 @@ void bbgg2DFitter::MakeSigWS(std::string fileBaseName)
         wAll->import( *_w->var( tempObj->GetName() ), RenameVariable( thisVarName, newVarName));
       }
       //Shifts and smearings
+
+      _w->factory(TString::Format("prod::CMS_hgg_sig_sigmaScale_cat%d(CMS_hgg_sig_sigmaShift_cat%d, CMS_hgg_sig_sigmaUncertainty)", c, c));
+
       _w->factory(TString::Format("prod::CMS_hgg_sig_m0_cat%d(mgg_sig_m0_cat%d, CMS_hgg_sig_m0_absShift)", c, c));
-      _w->factory(TString::Format("prod::CMS_hgg_sig_sigma_cat%d(mgg_sig_sigma_cat%d, CMS_hgg_sig_sigmaScale)", c, c));
+      _w->factory(TString::Format("prod::CMS_hgg_sig_sigma_cat%d(mgg_sig_sigma_cat%d, CMS_hgg_sig_sigmaScale_cat%d)", c, c, c));
       if (_fitStrategy==2){
 	_w->factory(TString::Format("prod::CMS_hbb_sig_m0_cat%d(mjj_sig_m0_cat%d, CMS_hbb_sig_m0_absShift)", c, c));
 	_w->factory(TString::Format("prod::CMS_hbb_sig_sigma_cat%d(mjj_sig_sigma_cat%d, CMS_hbb_sig_sigmaScale)", c, c));
@@ -609,9 +613,13 @@ void bbgg2DFitter::MakeHigWS(std::string fileHiggsName,int higgschannel, TString
         wAll->import( *_w->var( tempObj->GetName() ), RenameVariable( thisVarName, newVarName));
       }
 
+
       //Shifts and smearings
       _w->factory(TString::Format("prod::CMS_hgg_hig_m0_%s_cat%d(mgg_hig_m0_%s_cat%d, CMS_hgg_sig_m0_absShift)", higName.Data(), c, higName.Data(), c));
-      _w->factory(TString::Format("prod::CMS_hgg_hig_sigma_%s_cat%d(mgg_hig_sigma_%s_cat%d, CMS_hgg_sig_sigmaScale)", higName.Data(), c, higName.Data(), c));
+
+
+      _w->factory(TString::Format("prod::CMS_hgg_hig_sigmaScale_%s_cat%d(CMS_hgg_sig_sigmaShift_cat%d, CMS_hgg_sig_sigmaUncertainty)", higName.Data(), c, c));
+      _w->factory(TString::Format("prod::CMS_hgg_hig_sigma_%s_cat%d(mgg_hig_sigma_%s_cat%d, CMS_hgg_hig_sigmaScale_%s_cat%d)", higName.Data(), c, higName.Data(), c, higName.Data(), c));
 
       if(!_useDSCB) _w->factory(TString::Format("prod::CMS_hgg_gsigma_%s_cat%d(mgg_hig_gsigma_%s_cat%d, CMS_hgg_sig_sigmaScale)",
 						higName.Data(), c, higName.Data(), c));
@@ -690,11 +698,13 @@ void bbgg2DFitter::MakeBkgWS(std::string fileBaseName)
 
       wAll->import(*_w->pdf(TString::Format("CMS_Bkg_cat%d", c)));
       wAll->import(*_w->var(TString::Format("BkgPdf_cat%d_norm", c)), RenameVariable(TString::Format("BkgPdf_cat%d_norm", c) , TString::Format("CMS_Bkg_cat%d_norm",c)));
+      //data[c] = (RooDataSet*) _w->data(TString::Format("Data_cat%d",c));
+      //RooDataHist* dataBinned = data[c]->binnedClone(); // Uncomment if you want to use wights in the limits
+      //wAll->import(*dataBinned,  Rename(TString::Format("data_obs_cat%d", c) )); // Uncomment if you want to use wights in the limits
       wAll->import(*_w->data(TString::Format("Data_cat%d", c)), Rename(TString::Format("data_obs_cat%d", c) ));
-      //if (_fitStrategy==1)
-      //wAll->import(*_w->pdf(TString::Format("mggBkgTmpBer1_cat%d",c)), Rename(TString::Format("mggBkgTmpBer1_cat%d",c)));
 
-    } // close ncat
+
+    } 
 
   TString filename(wsDir+fileBaseName+".root");
   wAll->writeToFile(filename);
@@ -728,8 +738,8 @@ RooFitResult* bbgg2DFitter::BkgModelFit(Bool_t dobands, bool addhiggs)
   // retrieve pdfs and datasets from workspace to fit with pdf models
   std::vector<RooDataSet*> data(_NCAT,nullptr);
   std::vector<RooDataSet*> dataplot(_NCAT,nullptr); // the data
-  std::vector<RooBernstein*> mggBkg(_NCAT,nullptr);// the polinomial of 4* order
-  std::vector<RooBernstein*> mjjBkg(_NCAT,nullptr);// the polinomial of 4* order
+  std::vector<RooExponential*> mggBkg(_NCAT,nullptr);// the polinomial of 4* order
+  std::vector<RooExponential*> mjjBkg(_NCAT,nullptr);// the polinomial of 4* order
   std::vector<RooPlot*> plotmggBkg(_NCAT,nullptr);
   std::vector<RooPlot*> plotmjjBkg(_NCAT,nullptr);;
   std::vector<RooDataSet*>vecset(_NCAT,nullptr);
@@ -741,8 +751,8 @@ RooFitResult* bbgg2DFitter::BkgModelFit(Bool_t dobands, bool addhiggs)
   std::vector<RooAbsPdf*> mjjSig(_NCAT,nullptr);
   RooProdPdf* BkgPdf = nullptr;
 
-  RooBernstein* mjjBkgTmpBer1 = nullptr;
-  RooBernstein* mggBkgTmpBer1 = nullptr;
+  RooExponential* mjjBkgTmpBer1 = nullptr;
+  RooExponential* mggBkgTmpBer1 = nullptr;
 
   RooRealVar* mgg = _w->var("mgg");
   RooRealVar* mjj = _w->var("mjj");
@@ -785,30 +795,20 @@ RooFitResult* bbgg2DFitter::BkgModelFit(Bool_t dobands, bool addhiggs)
     _w->factory(TString::Format("BkgPdf_cat%d_norm[1.0,0.0,100000]",c));
     if (_verbLvl>1) std::cout << "[BkgModelFit] Cat loop point 2 - cat " << c << std::endl;
 
-    RooFormulaVar *mgg_p0amp = new RooFormulaVar(TString::Format("mgg_p0amp_cat%d",c),"","@0*@0",
-						            *_w->var(TString::Format("CMS_hhbbgg_13TeV_mgg_bkg_par1_cat%d",c)));
-    RooFormulaVar *mgg_p1amp = new RooFormulaVar(TString::Format("mgg_p1amp_cat%d",c),"","@0*@0",
-						 RooArgList(*_w->var(TString::Format("CMS_hhbbgg_13TeV_mgg_bkg_par2_cat%d",c)) ));
-    RooFormulaVar *mgg_p2amp = new RooFormulaVar(TString::Format("mgg_p2amp_cat%d",c),"","@0*@0",
-						 RooArgList(*_w->var(TString::Format("CMS_hhbbgg_13TeV_mgg_bkg_par3_cat%d",c)) ));
 
-    RooFormulaVar *mjj_p0amp = new RooFormulaVar(TString::Format("mjj_p0amp_cat%d",c),"","@0*@0",
-						            *_w->var(TString::Format("CMS_hhbbgg_13TeV_mjj_bkg_par1_cat%d",c)));
-    RooFormulaVar *mjj_p1amp = new RooFormulaVar(TString::Format("mjj_p1amp_cat%d",c),"","@0*@0",
-						 RooArgList(*_w->var(TString::Format("CMS_hhbbgg_13TeV_mjj_bkg_par2_cat%d",c)) ));
-    RooFormulaVar *mjj_p2amp = new RooFormulaVar(TString::Format("mjj_p2amp_cat%d",c),"","@0*@0",
-						 RooArgList(*_w->var(TString::Format("CMS_hhbbgg_13TeV_mjj_bkg_par3_cat%d",c)) ));
+    RooFormulaVar *mgg_p0amp = new RooFormulaVar(TString::Format("mgg_p0amp_cat%d",c),"","-1*@0*@0",
+						 *_w->var(TString::Format("CMS_hhbbgg_13TeV_mgg_bkg_par1_cat%d",c)));
+
+    RooFormulaVar *mjj_p0amp = new RooFormulaVar(TString::Format("mjj_p0amp_cat%d",c),"","-1*@0*@0",
+						 *_w->var(TString::Format("CMS_hhbbgg_13TeV_mjj_bkg_par1_cat%d",c)));
+
 
 
     if (_verbLvl>1) std::cout << "[BkgModelFit] Cat loop point 3 - cat " << c << std::endl;
 
-    mggBkgTmpBer1 = new RooBernstein(TString::Format("mggBkgTmpBer1_cat%d",c),"",*mgg,RooArgList(*mgg_p0amp));
-    mjjBkgTmpBer1 = new RooBernstein(TString::Format("mjjBkgTmpBer1_cat%d",c),"",*mjj,RooArgList(*mjj_p0amp));
+    mggBkgTmpBer1 = new RooExponential(TString::Format("mggBkgTmpBer1_cat%d",c),"",*mgg,*mgg_p0amp);
+    mjjBkgTmpBer1 = new RooExponential(TString::Format("mjjBkgTmpBer1_cat%d",c),"",*mjj,*mjj_p0amp);
 
-    if(nEvtsObs > 15) {
-      mggBkgTmpBer1 = new RooBernstein(TString::Format("mggBkgTmpBer1_cat%d",c),"",*mgg,RooArgList(*mgg_p0amp,*mgg_p1amp));
-      mjjBkgTmpBer1 = new RooBernstein(TString::Format("mjjBkgTmpBer1_cat%d",c),"",*mjj,RooArgList(*mjj_p0amp,*mjj_p1amp));
-    }
 
     if (_verbLvl>1) std::cout << "[BkgModelFit] Cat loop point 4 - cat" << c << std::endl;
 
