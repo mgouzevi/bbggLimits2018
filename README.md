@@ -16,7 +16,7 @@ scramv1 b clean; scramv1 b
 Get this repository code:
 ```
 cd ../
-git clone git@github.com:ResonantHbbHgg/bbggLimits2018.git
+git clone git@github.com:mgouzevi/ResonantHbbHgg/bbggLimits2018.git
 cd bbggLimits2018
 scramv1 b
 ```
@@ -57,6 +57,9 @@ as well as *mgg* and *mjj*. Different type of categorizations can be done chosen
 
 ```
 ./runLimit.py -f conf_default.json --node=SM -o LIMS_OutDir
+sh SmartScripts/Analyzer.sh
+sh SmartScripts/ForApproval_MakeSMHHSignalFits_UPGRADE.sh LIMS_OutDir
+sh SmartScripts/ForApproval_MakeSMHHFullBkgPlots_UPGRADE.sh LIMS_OutDir
 ```  
 The process may take a while to complete, especially when running with many categories.  
 The config file `conf_default.json` can be edited to provide needed parameters. Some of them are:  
