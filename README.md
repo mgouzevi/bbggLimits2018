@@ -1,3 +1,5 @@
+This version of the code is designed for the projections
+
 # How to
 
 * Get latest combine tools ([link](https://cms-hcomb.gitbooks.io/combine/content/part1/#for-end-users-that-dont-need-to-commit-or-do-any-development)):
@@ -22,7 +24,7 @@ scramv1 b
 ```
 
 ## Fits and limits
-* Run the fits and limits on the produced LTs:
+* Run the fits and limits on the provided LT:
 
 ```
 ./runLimit.py -f conf_default.json --node=SM -o LIMS_OutDir
