@@ -1,7 +1,6 @@
 from ROOT import *
-from HiggsAnalysis.bbggLimits.NiceColors import *
+from HiggsAnalysis.bbggLimits2018.MyCMSStyle import *
 import argparse, sys
-from HiggsAnalysis.bbggLimits.MyCMSStyle import *
 import numpy as n
 
 def MakeFullBackgroundPdf(bkg_pdf, bkg_norm, hig_pdfs, hig_norms):
@@ -28,141 +27,130 @@ def MakeFullBackgroundPdf(bkg_pdf, bkg_norm, hig_pdfs, hig_norms):
   return totPdf
 
 
-def MakeFullModelPdf(sig_pdf, sig_norm, bkg_pdf, bkg_norm, hig_pdfs, hig_norms):
-  if len(hig_pdfs) == 0:
-    print 'No HIG background found'
-    return bkg_pdf
+def MakeFullModelPdf(sig_pdf, sig_norm, totBkg_pdf, totBkg_norm):
+
   argPdfs = RooArgList()
   argNorms = RooArgList()
-  argPdfs.add(bkg_pdf)
+  argPdfs.add(totBkg_pdf)
   argPdfs.add(sig_pdf)
-  argNorms.add(bkg_norm)
+  argNorms.add(totBkg_norm)
   argNorms.add(sig_norm)
-  if len(hig_pdfs) != len(hig_norms):
-    print "list of higgs pdfs has different size wrt normalizations!"
-    return None
-  for hh in range(0, len(hig_pdfs)):
-#    hig_pdfs[hh].Print()                                                                                                                                              
-    argPdfs.add(hig_pdfs[hh])
-    argNorms.add(hig_norms[hh])
-#  argNorms.Print()                                                                                                                                                     
-#  argPdfs.Print()                                                                                                                                                            
-  if argNorms.getSize() != argPdfs.getSize():
-    print 'ArgNorms and ArgPdfs have different sizes!'
-    return None
+
   totModPdf = RooAddPdf('totModPdf', 'Signal + Nonresonant background + single H background', argPdfs, argNorms)
   return totModPdf
+
+
 
 gSystem.Load("libHiggsAnalysisCombinedLimit.so")
 gROOT.SetBatch(kTRUE)
 
 parser =  argparse.ArgumentParser(description='Background fit plot maker')
 parser.add_argument('-i', '--inputFile', dest="dname", type=str, default=None, required=True)
-parser.add_argument('-o', '--outFile', dest="outf", type=str, default=".")
+parser.add_argument('-o', '--outName', dest="outName", type=str, default=None, required=True)
+parser.add_argument('-c', '--cat', dest="category", type=int, default=None, required=True)
 parser.add_argument('-L', '--lumi', dest='lumi', type=str, default='3000')
-parser.add_argument('-Sn', '--signalNormalization', dest='snorm', type=float, default=[10.0,10.0], nargs='+')
 parser.add_argument('-Sf', '--signalFactor', dest='fsignal', type=float, default=[10.0,10.0], nargs='+')
-parser.add_argument('-H', '--addHiggs', dest='addh', action='store_true', default=False)
-parser.add_argument('-Hl', '--higgsList', dest='hlist', type=str, default=None, nargs='+',
-                           choices=['ggh', 'vbf', 'tth', 'vh', 'bbh'] )
-parser.add_argument('-t', '--text', dest='text', type=str, default='')
 parser.add_argument('-u', '--unblind', dest='unblind', default=False, action='store_true')
 
 opt = parser.parse_args()
 
-tfile = TFile(opt.dname, "READ")
-ofile = TFile(opt.outf+".root", "RECREATE")
 
-w_all = tfile.Get("MaxLikelihoodFitResult")
-
-w_all.Print()
-
-cats = [0,1]
-if 'High' in opt.outf or 'High' in opt.text: cats = [2,3]
-
-Higgses = opt.hlist
-if Higgses == None: Higgses = ['ggh', 'vbf', 'tth', 'vh', 'bbh']
+Higgses = ['ggh', 'vbf', 'tth', 'vh', 'bbh']
 
 dims = ['mjj', 'mgg']
-bins = [25, 25]
-minval = [93.2, 105]
+
+bin = [20, 25]
+minval = [94, 105]
 maxval = [190, 145]
+
+hig_pdfs = []
+hig_norms = []
+totHiggs = 0
 
 xtitle = ['m_{jj} [GeV]', 'm_{#gamma#gamma} [GeV]']
 ytitle = ['Events/(5 GeV)', 'Events/(1 GeV)']
-yLimits = {'mgg': [60, 700, 60, 400], 'mjj': [110, 1000, 110, 700]}
-#yLimits = {'mgg': [0.03, 0.1, 0.03, 0.1], 'mjj': [0.03, 0.1, 0.03, 0.1]}
-#yLimits = {'mgg': [6, 500, 6, 700], 'mjj': [200, 1200, 200, 2000]}
+Cats = ["HP, M_{X} < 350 GeV", "MP, M_{X} < 350 GeV", "HP, 350 < M_{X} < 480 GeV", "MP, 350 < M_{X} < 480 GeV", "HP, 480 GeV < M_{X} ", "MP, 480 GeV < M_{X}"]
 
-for cc in cats:
- for iobs,obs in enumerate(dims):
 
-  intc = cc
-  if intc > 1: intc = cc - 2
+tfile = TFile(opt.dname, "READ")
+w_all = tfile.Get("w")
+#w_all.Print()
+
+icat = opt.category
+
+
+for iobs,obs in enumerate(dims):
 
   var = w_all.var(obs)
   data_cat = w_all.obj('CMS_channel')
-  catbin = 'ch1_cat'
-  if cc == 0 or cc == 1: catbin = 'ch2_cat'
-  data_cat.setRange("catcut",catbin+str(cc))
-#  var.Print()
+  data_cat.setRange("catcut","ch"+str(icat+1))
   var.Print()
 
-  sig_pdf_name = obs+'Sig_cat'+str(intc)+'_CMS_sig_cat'+str(cc)
+  sig_pdf_name = obs+'Sig_cat'+str(icat)+'_CMS_sig_cat'+str(icat)
   sig_pdf = w_all.pdf(sig_pdf_name)
-#  print sig_pdf_name
+  sig_normName = 'n_exp_binch'+str(icat+1)+'_proc_Sig'
+  sig_norm = RooRealVar('sig_norm','signal norm', opt.fsignal[iobs]*w_all.obj(sig_normName).getVal())
+
   print sig_pdf_name
   sig_pdf.Print()
-  normName = 'n_exp_binch1_cat'
-  if cc == 0 or cc == 1: normName = 'n_exp_binch2_cat'
-  ####sig_norm = w_all.obj(normName+str(cc)+'_proc_Sig').getVal()
-  sig_norm = RooRealVar('sig_norm','signal norm', w_all.obj(normName+str(cc)+'_proc_Sig').getVal())
-  #print "@@@ sig_norm: %.1f" % sig_norm
-  print "@@@ sig_norm: %.1f" % sig_norm.getVal()
+  print "@@@ sig_norm: %.1f including SF: %.1f" % (sig_norm.getVal(), opt.fsignal[iobs])
 
-  bkg_pdf_name = obs+'BkgTmpExp1_cat'+str(intc)+'_CMS_Bkg_cat'+str(cc)
+
+  bkg_pdf_name = obs+'BkgTmpBer1_cat'+str(icat)+'_CMS_Bkg_cat'+str(icat)
   bkg_pdf = w_all.pdf(bkg_pdf_name)
-#  bkg_pdf.Print()
+  bkg_normName = 'n_exp_final_binch'+str(icat+1)+'_proc_Bkg'
+  bkg_norm = RooRealVar('bkg_norm', 'nonres bkg norm', w_all.obj(bkg_normName).getVal())
+
+  print bkg_pdf_name 
   bkg_pdf.Print()
-  normName = 'n_exp_final_binch1_cat'
-  if cc == 0 or cc == 1: normName = 'n_exp_final_binch2_cat'
-  bkg_norm = RooRealVar('bkg_norm', 'nonres bkg norm', w_all.obj(normName+str(cc)+'_proc_Bkg').getVal())
 
 
-  data2d = w_all.data("model_sData")
-#  data2d = w_all.data("data_obs")
+  for hh in Higgses:
+    hig_pdf_name = obs+'Hig_'+hh+'_cat'+str(icat)+'_CMS_hig_'+hh+'_cat'+str(icat)
+    hig_pdf = w_all.pdf(hig_pdf_name)
+    hig_pdfs.append(hig_pdf)
+
+    hig_normName = 'n_exp_binch'+str(icat+1)+'_proc_'+hh
+    print hig_normName
+    hig_norm = RooRealVar(hh+'_norm', hh+' bkg norm', w_all.obj(hig_normName).getVal() )
+    hig_norms.append(hig_norm)
+    print hig_pdf_name, " ", hig_norm.getVal()
+    totHiggs += w_all.obj(hig_normName).getVal()
+
+  totBkg_pdf = MakeFullBackgroundPdf(bkg_pdf, bkg_norm, hig_pdfs, hig_norms)
+  totBkg_norm =  RooRealVar("totBkg_norm", "Normaisation of the total background",totHiggs + bkg_norm.getVal())
+
+
+  model = MakeFullModelPdf(sig_pdf, sig_norm, totBkg_pdf, totBkg_norm)
+  totModel_norm =  RooRealVar("totModel_norm", "Total normalisation including signal", totBkg_norm.getVal()+sig_norm.getVal())
+
+
+
+
+#  data2d = w_all.data("model_sData")
+  data2d = tfile.Get("toys/toy_asimov;1")
   data2d.Print()
   
-#  data = data2d.reduce(RooArgSet(RooFit.CutRange('catcut')))
   data = data2d.reduce(RooFit.CutRange('catcut'))
+
   data.Print()
-#  sys.exit()
 
-  hig_pdfs = []
-  hig_norms = []
-  totHiggs = 0
-  if 1==1:
-    for hh in Higgses:
-      hig_pdf_name = obs+'Hig_'+hh+'_cat'+str(intc)+'_CMS_hig_'+hh+'_cat'+str(cc)
-      hig_pdf = w_all.pdf(hig_pdf_name)
-      hig_pdfs.append(hig_pdf)
-      normNameHIG = 'n_exp_binch1_cat'
-      if cc == 0 or cc == 1: normNameHIG = 'n_exp_binch2_cat'
-      norm = RooRealVar(hh+'_norm', hh+' bkg norm', w_all.obj(normNameHIG+str(cc)+'_proc_'+hh).getVal() )
-      hig_norms.append(norm)
-      print hig_pdf_name, norm.getVal()
-      totHiggs += w_all.obj(normNameHIG+str(cc)+'_proc_'+hh).getVal()
 
-  totBkg = MakeFullBackgroundPdf(bkg_pdf, bkg_norm, hig_pdfs, hig_norms)
-  totBkgNorm = totHiggs + bkg_norm.getVal()
+  binning = bin[iobs]
+  cNiceBlueDark = TColor.GetColor('#2175E0')
+  cNiceGreenDark = TColor.GetColor('#008040')
+  cNiceRed = TColor.GetColor('#FA4912')
 
-  model = MakeFullModelPdf(sig_pdf, sig_norm, bkg_pdf, bkg_norm, hig_pdfs, hig_norms)
+  ymax =  bkg_norm.getVal()/bin[iobs]*2
 
-#  print totBkg
-  print 'Total nonres:', bkg_norm.getVal(), 'total higgs:', totHiggs, totBkgNorm
-#  sys.exit()
+  print obs, " ymax = ", ymax
 
-  binning = bins[iobs]
+  pdfout = opt.outName+"/Cat"+ str(icat) + "_" + obs+".pdf"
+  pngout = opt.outName+"/Cat"+str(icat) + "_" + obs+".png"
+  poiss_pdfout = opt.outName+"/Cat"+str(icat) + "_" + obs+"_poiss.pdf"
+  poiss_pngout = opt.outName+"/Cat"+str(icat) + "_"+obs+"_poiss.png"
+
+
 
   frame = var.frame(RooFit.Title(" "),RooFit.Bins(binning),RooFit.Range(minval[iobs],maxval[iobs]))
   dataind = 0
@@ -184,26 +172,15 @@ for cc in cats:
 #    data.plotOn(frame,RooFit.DataError(RooAbsData.Poisson),RooFit.XErrorSize(0))
     data.plotOn(frame,RooFit.DataError(RooAbsData.SumW2),RooFit.XErrorSize(0))
     
+
   
   bkg_pdf.plotOn(frame,RooFit.LineColor(cNiceGreenDark), RooFit.LineStyle(kDashed), RooFit.Precision(1E-5), RooFit.Normalization(bkg_norm.getVal(), RooAbsReal.NumEvent))
-  totBkg.plotOn(frame,RooFit.LineColor(cNiceBlueDark),RooFit.Precision(1E-5), RooFit.Normalization(totBkgNorm, RooAbsReal.NumEvent))
+  totBkg_pdf.plotOn(frame,RooFit.LineColor(cNiceBlueDark),RooFit.Precision(1E-5), RooFit.Normalization(totBkg_norm.getVal(), RooAbsReal.NumEvent))
 
-###  sig_pdf.plotOn(frame,RooFit.LineColor(cNiceRed), RooFit.Precision(1E-5), RooFit.Normalization(opt.snorm[intc]*opt.fsignal[intc],RooAbsReal.NumEvent))
-
-  ##model.plotOn(frame,RooFit.LineColor(cNiceRed), RooFit.Precision(1E-5), RooFit.Normalization(sig_norm.getVal()*opt.fsignal[intc],totBkgNorm,RooAbsReal.NumEvent))
-  model.plotOn(frame,RooFit.LineColor(cNiceRed), RooFit.Precision(1E-5))
-
-  ##sig_pdf.plotOn(frame,RooFit.LineColor(cNiceRed), RooFit.LineStyle(kDashed), RooFit.Precision(1E-5), RooFit.Normalization((sig_norm.getVal())*opt.fsignal[intc],RooAbsReal.NumEvent))
+  model.plotOn(frame,RooFit.LineColor(cNiceRed), RooFit.Precision(1E-5), RooFit.Normalization(totModel_norm.getVal(),RooAbsReal.NumEvent))
 
   datahist = frame.getObject(0)
 
-  rnd = TRandom(2)
-
-  x=n.zeros(1, dtype=float)
-  xE=n.zeros(1, dtype=float)
-  y=n.zeros(1, dtype=float)
-  yE=n.zeros(1, dtype=float)
-  rndvalue=n.zeros(1, dtype=float)
 
 
   bkghist = frame.getObject(dataind+1)
@@ -222,63 +199,41 @@ for cc in cats:
   leg.AddEntry(bkghist, 'Nonresonant background', 'l')
   leg.AddEntry(totbkgh, 'Full background', 'l')
   leg.AddEntry(modelhist, 'Signal + Full background', 'l')
-  ####leg.AddEntry(sigh, 'SM HH signal', 'l')
-#  sigText = 'SM HH Signal (x20)'
-#  if int(intc) == 1:
-  #####sigText = 'SM HH signal (x'+str(int(opt.fsignal[intc]))+')'
-  #####leg.AddEntry(sigh, sigText, 'l')
+
+
+
+
+
 
   SetGeneralStyle()
   c = TCanvas("c", "c", 800, 600)
   frame.Draw()
   frame.GetXaxis().SetTitle(xtitle[iobs])
   frame.GetYaxis().SetTitle(ytitle[iobs])
-  frame.SetMaximum(yLimits[obs][cc])
+  frame.SetMaximum(ymax)
   frame.SetMinimum(0.000)
   leg.Draw('same')
-  c.Update()
   SetPadStyle(c)
-  c.Update()
   SetAxisTextSizes(frame)
+  DrawCMSLabels(c, '3000')
+  DrawCatLabels(c, Cats[icat])
   c.Update()
 
-  topy = 0.91
-  stepy = 0.08
-  tlatex = TLatex()
-  tlatex.SetNDC()
-  tlatex.SetTextAngle(0)
-  tlatex.SetTextColor(kBlack)
-  tlatex.SetTextFont(63)
-  tlatex.SetTextAlign(11)
-  tlatex.SetTextSize(25)
-#  tlatex.DrawLatex(0.11, topy, "CMS")
-  tlatex.SetTextFont(53)
-#  tlatex.DrawLatex(0.18, topy, "Preliminary")
-  tlatex.SetTextFont(43)
-  tlatex.SetTextSize(20)
-  tlatex.SetTextAlign(31)
-#  tlatex.DrawLatex(0.9, topy, "L = " + str(opt.lumi) + " fb^{-1} (13 TeV)")
-  tlatex.SetTextAlign(11)
-  tlatex.SetTextSize(25)
-  Cat = "High-purity category"
-  if int(intc) == 1:
-    Cat = "Medium-purity category"
-  if "|" in opt.text:
-    an = opt.text.split("|")
-#               tlatex.SetTextFont(63)
-    tlatex.DrawLatex(0.14, topy-stepy*1, an[0])
-#               tlatex.SetTextFont(43)
-    tlatex.DrawLatex(0.14, topy-stepy*2, an[1])
-    tlatex.DrawLatex(0.14, topy-stepy*3, Cat)
-  else:
-#               tlatex.SetTextFont(63)
-    tlatex.DrawLatex(0.14, topy-stepy*1, opt.text)
-#               tlatex.SetTextFont(43)
-    tlatex.DrawLatex(0.14, topy-stepy*2, Cat)
 
-  DrawCMSLabels(c, '3000')
-  c.SaveAs(opt.outf+str(cc) + obs+".pdf")
-  c.SaveAs(opt.outf+str(cc) + obs+".png")
+  c.SaveAs(pdfout)
+  c.SaveAs(pngout)
+
+
+  print " ============= Making Poisson fluctuations ================== "
+
+  rnd = TRandom(2)
+  x=n.zeros(1, dtype=float)
+  xE=n.zeros(1, dtype=float)
+  y=n.zeros(1, dtype=float)
+  yE=n.zeros(1, dtype=float)
+  rndvalue=n.zeros(1, dtype=float)
+
+
 
   N = datahist.GetN()
   alpha = 1 - 0.6827
@@ -297,32 +252,12 @@ for cc in cats:
     datahist.SetPointEYlow(i, rndvalue[0]-L)
     datahist.SetPointEYhigh(i, U-rndvalue[0])
 
-#    Eup = sqrt()
-#    Edo = 
     print "x = ",x," y = ",y, " rndvalue", rndvalue
     datahist.SetPoint(i,x,rndvalue)
-#    datahist.SetPointEYhigh(i,x,Eup)
-#    datahist.SetPointEYlow(i,x,Edo)
 
 
-##  N = sigh.GetN()
-##  totsig = 0
-##  for i in range(1,N-1):
-##    sigh.GetPoint(i,x,y)
-##    xup = x[0] 
-##    yup = y[0]
-##    sigh.GetPoint(i-1,x,y)
-##    totsig = totsig + yup*(xup-x[0])
-#    print "x = ", x[0], " val = ", yup, "width = ", xup-x[0]
 
-##  integral = sigh.Integral()
-
-    
-##  print "totsig = ", totsig, " integral = ", integral
-##  print "----------------------------------------"
+  c.SaveAs(poiss_pdfout)
+  c.SaveAs(poiss_pngout)
 
 
-  c.SaveAs(opt.outf+str(cc) + obs+"_poiss.pdf")
-  c.SaveAs(opt.outf+str(cc) + obs+"_poiss.png")
-
-ofile.Close()
