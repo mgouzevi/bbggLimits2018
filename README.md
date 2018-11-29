@@ -57,7 +57,7 @@ as well as *mgg* and *mjj*. Different type of categorizations can be done chosen
 
 ```
 ./runLimit.py -f conf_default.json --node=SM -o LIMS_OutDir
-sh SmartScripts/Analyzer.sh
+sh SmartScripts/Analyzer.sh LIMS_OutDir
 sh SmartScripts/ForApproval_MakeSMHHSignalFits_UPGRADE.sh LIMS_OutDir
 sh SmartScripts/ForApproval_MakeSMHHFullBkgPlots_UPGRADE.sh LIMS_OutDir
 ```  
