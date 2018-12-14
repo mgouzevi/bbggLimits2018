@@ -1,5 +1,5 @@
 {
-    "LTDIR" : "/store/group/phys_higgs/resonant_HH/RunII/LimitTrees/MILANO_6CAT",
+    "LTDIR" : "/store/group/phys_higgs/resonant_HH/RunII/LimitTrees/klambda_scan/workspace_6cat/kl_1.000_intermediate",
     "RooFitTemplateName" : "templates/models_2D_higgs_mjj70",
     "ncat" : 6,
     "doDoubleSidedCB": 1,
