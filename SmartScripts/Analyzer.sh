@@ -7,12 +7,12 @@ echo $DIR
 
 text2workspace.py $DIR/hhbbgg_13TeV_DataCard.txt $DIR/hhbbgg_13TeV_DataCard.root -m 125 --X-nuisance-group-function 'theory' '0.5'
 
-DIR_Prefit=$1/Node_SM_Prefit
-echo ${DIR_Prefit}
+#DIR_Prefit=$1/Node_SM_Prefit
+#echo ${DIR_Prefit}
 
-cp -r ${DIR} ${DIR_Prefit}
+#cp -r ${DIR} ${DIR_Prefit}
 
-text2workspace.py $DIR_Prefit/hhbbgg_13TeV_DataCard.txt $DIR_Prefit/hhbbgg_13TeV_DataCard.root -m 125 --X-nuisance-group-function 'theory' '0.5'
+#text2workspace.py $DIR_Prefit/hhbbgg_13TeV_DataCard.txt $DIR_Prefit/hhbbgg_13TeV_DataCard.root -m 125 --X-nuisance-group-function 'theory' '0.5'
 
 cd $DIR
 
@@ -72,16 +72,13 @@ printf '\n=====\n\n'
 
 cd -
 
-echo ' == 4.1) Making prefit'
+#echo ' == 4.1) Making prefit'
 
-cd ../../${DIR_Prefit}
+#cd ../../${DIR_Prefit}
 
-text2workspace.py hhbbgg_13TeV_DataCard.txt hhbbgg_13TeV_DataCard.root -m 125 --X-nuisance-group-function 'theory' '0.5' --setPhysicsModelParameters yield_norm=1
+#text2workspace.py hhbbgg_13TeV_DataCard.txt hhbbgg_13TeV_DataCard.root -m 125 --X-nuisance-group-function 'theory' '0.5' --setPhysicsModelParameters yield_norm=1
 
-
-combine -M FitDiagnostics -t -1 --expectSignal 1 -d hhbbgg_13TeV_DataCard.root -S 0 &> MaxLikelihood_1fb.txt
-
+#combine -M FitDiagnostics -t -1 --expectSignal 1 -d hhbbgg_13TeV_DataCard.root --saveWorkspace --saveShapes --saveNormalization  --saveToys --savePredictionsPerToy &> MaxLikelihood.txt
 
 printf '\n== END ===\n\n'
 
-cd -
