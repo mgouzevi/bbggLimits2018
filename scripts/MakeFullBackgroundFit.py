@@ -68,7 +68,7 @@ hig_norms = []
 totHiggs = 0
 
 xtitle = ['m_{jj} [GeV]', 'm_{#gamma#gamma} [GeV]']
-ytitle = ['Events/(5 GeV)', 'Events/(1 GeV)']
+ytitle = ['Events/(4.8 GeV)', 'Events/(1.6 GeV)']
 Cats = ["HP, M_{X} < 350 GeV", "MP, M_{X} < 350 GeV", "HP, 350 < M_{X} < 480 GeV", "MP, 350 < M_{X} < 480 GeV", "HP, 480 GeV < M_{X} ", "MP, 480 GeV < M_{X}"]
 
 
@@ -127,7 +127,7 @@ for iobs,obs in enumerate(dims):
 
 
 
-#  data2d = w_all.data("model_sData")
+#  data2d = w_all.data("data_obs")
   data2d = tfile.Get("toys/toy_asimov;1")
   data2d.Print()
   
@@ -141,7 +141,7 @@ for iobs,obs in enumerate(dims):
   cNiceGreenDark = TColor.GetColor('#008040')
   cNiceRed = TColor.GetColor('#FA4912')
 
-  ymax =  bkg_norm.getVal()/bin[iobs]*2
+  ymax =  bkg_norm.getVal()/bin[iobs]*2.1
 
   print obs, " ymax = ", ymax
 
@@ -182,23 +182,22 @@ for iobs,obs in enumerate(dims):
   datahist = frame.getObject(0)
 
 
-
   bkghist = frame.getObject(dataind+1)
   totbkgh = frame.getObject(dataind+2)
   modelhist = frame.getObject(dataind+3)
   ##sigh = frame.getObject(dataind+4)
 
 
-  leg = TLegend(0.5, 0.55, 0.89, 0.89)
+  leg = TLegend(0.45, 0.55, 0.89, 0.89)
   leg.SetBorderSize(0)
   leg.SetFillStyle(0)
   leg.SetTextFont(43)
-  leg.SetTextSize(20)
+  leg.SetTextSize(28)
 #  leg.SetNColumns(3)
   leg.AddEntry(datahist, 'Pseudo-data', 'pe')
-  leg.AddEntry(bkghist, 'Nonresonant background', 'l')
-  leg.AddEntry(totbkgh, 'Full background', 'l')
-  leg.AddEntry(modelhist, 'Signal + Full background', 'l')
+  leg.AddEntry(bkghist, 'Nonresonant backgr.', 'l')
+  leg.AddEntry(totbkgh, 'Full backgr.', 'l')
+  leg.AddEntry(modelhist, 'Sig. + Full backgr.', 'l')
 
 
 
@@ -226,7 +225,8 @@ for iobs,obs in enumerate(dims):
 
   print " ============= Making Poisson fluctuations ================== "
 
-  rnd = TRandom(2)
+  rnd = TRandom(1)
+  rnd.SetSeed(1+icat*100+iobs*10)
   x=n.zeros(1, dtype=float)
   xE=n.zeros(1, dtype=float)
   y=n.zeros(1, dtype=float)

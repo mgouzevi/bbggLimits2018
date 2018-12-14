@@ -52,13 +52,15 @@ def DrawCMSLabels(obj, lumi=''):
   lat = TLatex()
   lat.SetTextSize(0.045)
   lat.SetTextAlign(11)
-  lat.SetTextFont(42)
-  cmsTag = "#bf{CMS}  #it{Projection}"
+  lat.SetTextFont(62)
+  cmsTag = "CMS Phase-2"
   lumiTag = lumi+' fb^{-1} (14 TeV)'
 #  if lumi == '':
 #    cmsTag = "#bf{CMS} #it{Simulation}"
 #    lumiTag = '(13 TeV)'
   lat.DrawLatexNDC(l+0.01, 1-t+0.02, cmsTag)
+
+  lat.SetTextFont(42)
   lat.SetTextAlign(31)
   lat.DrawLatexNDC(1-r-0.001, 1-t+0.02, lumiTag)
 
@@ -69,14 +71,19 @@ def DrawCatLabels(obj, cat):
   lat.SetNDC()
   lat.SetTextAlign(11)
   lat.SetTextSize(25)
-  lat.SetTextFont(43)
 
   topy = 0.91
   stepy = 0.08
 
+  labelPrel =   "#it{Simulation Preliminary}"
   label =   "#bf{pp#rightarrowHH#rightarrow#gamma#gammab#bar{b}}"
 
-  lat.DrawLatex(0.14, topy-stepy*1, label)
-  lat.DrawLatex(0.14, topy-stepy*2, cat)
+  lat.SetTextFont(43)
+#  lat.DrawLatex(0.14, topy-stepy*2, label)
+#  print labelPrel
+#  lat.SetTextFont(43)
+  lat.DrawLatex(0.14, topy-stepy*1, labelPrel)
+  lat.DrawLatex(0.14, topy-stepy*2, label)
+  lat.DrawLatex(0.14, topy-stepy*3, cat)
 
 

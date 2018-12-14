@@ -13,6 +13,7 @@ LIMFOLDER=$1/Node_SM
 ## 2) Make plots with fit
 
 INFILE=${LIMFOLDER}/higgsCombineTest.FitDiagnostics.mH120.123456.root
+DATAFILE=${LIMFOLDER}/ws_hhbbgg.data_bkg.root
 
 BKG=${LIMFOLDER}/Background
 mkdir ${BKG}
@@ -25,5 +26,7 @@ FACT=1.
 
 for icat in {0..5}
 do
+
     python scripts/MakeFullBackgroundFit.py -i ${INFILE} -o ${BKG} -c ${icat} --signalFactor ${FACT} ${FACT} --unblind
+    python scripts/MakeFullBackgroundFit_Data.py -i ${INFILE} -d ${DATAFILE} -o ${BKG} -c ${icat} --signalFactor ${FACT} ${FACT} --unblind
 done
